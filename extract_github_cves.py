@@ -27,11 +27,13 @@ def download_allitems():
 
 def extract_github_links():
     if os.path.exists(CVE_GITHUB_COMMITS):
-        print("file", CVE_GITHUB_COMMITS, "exists")
+        print("file", CVE_GITHUB_COMMITS, " already exists")
         unique_links = []
         with open(CVE_GITHUB_COMMITS, 'r', encoding='latin1') as f:
-            for line in f.read():
-                unique_links.append(line.split())
+            for line in f:
+                CVE_ID_LINK = line.split()
+                unique_links.append(CVE_ID_LINK)                
+        return unique_links
         
     cve_commits = set()
     with open(ALLITEMS_FILE, 'r', encoding='latin1') as f:
@@ -69,7 +71,13 @@ def get_repo_info(commit_url):
     return repo_url, commit_hash
 
 def sparse_clone_and_extract(repo_url, commit_hash, out_path):
-    with tempfile.TemporaryDirectory() as tmpdir:
+    file_tag = repo_url.strip("https://").replace("/", "_")
+    os.makedirs(out_path, exist_ok=True)
+    tmpdir = os.path.join(out_path, f"{file_tag}_{commit_hash}")
+    diff_file = tmpdir + ".diff"
+    
+    if not os.path.exists(tmpdir):
+        os.makedirs(tmpdir, exist_ok=True)
         try:
             repo = Repo.clone_from(repo_url, tmpdir, depth=1, no_single_branch=True)
             repo.git.fetch("origin", commit_hash)
@@ -85,51 +93,28 @@ def sparse_clone_and_extract(repo_url, commit_hash, out_path):
             capture_output=True, text=True
         ).stdout
 
-        file_tag = repo_url.strip("https://").replace("/", "_")
-        os.makedirs(out_path, exist_ok=True)
-        output_file_start = os.path.join(out_path, f"{file_tag}_{commit_hash}")
-        diff_file = output_file_start + ".diff"
-
         with open(diff_file, "w") as f:
             f.write(diff_output)
         print(f"[+] Saved diff in {diff_file}")
 
-        function_names = extract_changed_functions(diff_output)
-        print("function_names", function_names)
+    function_names = extract_changed_functions(diff_file)
+    print("function_names", function_names)
 
-        # Extract functions using regex for simplicity
-        #function_pattern = re.compile(r'^[+-]\s*(\w[\w\s\*]+)?\s+(\w+)\s*\([^)]*\)\s*\{', re.MULTILINE)
-        #functions_file = output_file_start + ".functions"
-            
-        #with open(functions_file, "w") as f:
-        #    for match in function_pattern.finditer(diff_output):
-        #        f.write(match.group(0) + "\n")
-        #print(f"[+] Saved function matches in {functions_file}")
+    # Extract functions using regex for simplicity
+    #function_pattern = re.compile(r'^[+-]\s*(\w[\w\s\*]+)?\s+(\w+)\s*\([^)]*\)\s*\{', re.MULTILINE)
+    #functions_file = output_file_start + ".functions"
         
-def extract_changed_functions(diff_content):
-    """
-    Extracts the names of functions that have been changed (added or modified)
-    in a given Git diff content.
-
-    This function specifically looks for Python function definitions ('def function_name(...)')
-    within lines marked as added (+) or removed (-) in the diff.
-
-    Args:
-        diff_content: A string containing the Git diff output.
-
-    Returns:
-        A set of strings, where each string is the name of a function
-        that was changed in the diff.
-    """
+    #with open(functions_file, "w") as f:
+    #    for match in function_pattern.finditer(diff_output):
+    #        f.write(match.group(0) + "\n")
+    #print(f"[+] Saved function matches in {functions_file}")
+        
+def extract_changed_functions(diff_file):
+    with open(diff_file, "r") as f:
+        diff_content = f.read()
     changed_functions = set()
-    # Regex to capture Python function definitions:
-    # ^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*?\):
-    # ^\s* - Start of line, optional leading whitespace
-    # def\s+     - 'def' keyword followed by one or more spaces
-    # ([a-zA-Z_][a-zA-Z0-9_]*) - Capturing group for function name:
-    #                            starts with letter or underscore, followed by letters, digits, or underscores
-    # \s*\(.*?\): - Optional whitespace, opening parenthesis, any characters (non-greedy), closing parenthesis, colon
-    function_pattern = re.compile(r"^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*?\):")
+    #function_pattern = re.compile(r"^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*?\):")
+    function_pattern = re.compile(r'^[+-]\s*(\w[\w\s\*]+)?\s+(\w+)\s*\([^)]*\)\s*\{', re.MULTILINE)
 
     # Split the diff content into lines
     lines = diff_content.splitlines()
@@ -148,7 +133,7 @@ def extract_changed_functions(diff_content):
 
 def process_all_commits(unique_links):
     os.makedirs(EXTRACTED_FUNCTIONS_DIR, exist_ok=True)
-    for commit_url, cve_id in tqdm(unique_links, desc="Processing commits"):
+    for cve_id, commit_url in tqdm(unique_links, desc="Processing commits"):
         repo_url, commit_hash = get_repo_info(commit_url)
         if not repo_url:
             continue
@@ -158,7 +143,6 @@ def process_all_commits(unique_links):
 def main():
     download_allitems()
     unique_links = extract_github_links()
-    
     process_all_commits(unique_links)
 
 if __name__ == "__main__":
