@@ -73,13 +73,13 @@ def get_repo_info(commit_url):
 def sparse_clone_and_extract(repo_url, commit_hash, out_path):
     file_tag = repo_url.strip("https://").replace("/", "_")
     os.makedirs(out_path, exist_ok=True)
-    tmpdir = os.path.join(out_path, f"{file_tag}_{commit_hash}")
-    diff_file = tmpdir + ".diff"
+    repodir = os.path.join(out_path, f"{file_tag}_{commit_hash}")
+    diff_file = repodir + ".diff"
     
-    if not os.path.exists(tmpdir):
-        os.makedirs(tmpdir, exist_ok=True)
+    if not os.path.exists(repodir):
+        os.makedirs(repodir, exist_ok=True)
         try:
-            repo = Repo.clone_from(repo_url, tmpdir, depth=1, no_single_branch=True)
+            repo = Repo.clone_from(repo_url, repodir, depth=1, no_single_branch=True)
             repo.git.fetch("origin", commit_hash)
             repo.git.checkout(commit_hash)
         except Exception as e:
@@ -88,8 +88,8 @@ def sparse_clone_and_extract(repo_url, commit_hash, out_path):
         
         # save diff
         diff_output = subprocess.run(
-            ["git", "diff", f"{commit_hash}~1", commit_hash],
-            cwd=tmpdir,
+            ["git", "diff", "-W", f"{commit_hash}~1", commit_hash],
+            cwd=repodir,
             capture_output=True, text=True
         ).stdout
 
@@ -97,39 +97,23 @@ def sparse_clone_and_extract(repo_url, commit_hash, out_path):
             f.write(diff_output)
         print(f"[+] Saved diff in {diff_file}")
 
-    function_names = extract_changed_functions(diff_file)
-    print("function_names", function_names)
-
-    # Extract functions using regex for simplicity
-    #function_pattern = re.compile(r'^[+-]\s*(\w[\w\s\*]+)?\s+(\w+)\s*\([^)]*\)\s*\{', re.MULTILINE)
-    #functions_file = output_file_start + ".functions"
+    
+    extract_changed_functions(repodir, diff_file)
         
-    #with open(functions_file, "w") as f:
-    #    for match in function_pattern.finditer(diff_output):
-    #        f.write(match.group(0) + "\n")
-    #print(f"[+] Saved function matches in {functions_file}")
-        
-def extract_changed_functions(diff_file):
+def extract_changed_functions(repodir, diff_file):
     with open(diff_file, "r") as f:
         diff_content = f.read()
-    changed_functions = set()
-    #function_pattern = re.compile(r"^\s*def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(.*?\):")
-    function_pattern = re.compile(r'^[+-]\s*(\w[\w\s\*]+)?\s+(\w+)\s*\([^)]*\)\s*\{', re.MULTILINE)
+    import parse_diff2
+    results = parse_diff2.parse_git_diff_to_old_version(diff_content)
+    
+    repo_all_diffs = repodir + "_all_diffs"
+    os.makedirs(repo_all_diffs, exist_ok=True)
+    for i in range(len(results)):
+        item = results[i]
+        one_diff_path = os.path.join(repo_all_diffs, str(i) + item['file'].replace("/", "_"))
+        with open(one_diff_path, "w") as f:
+            f.write(item['old_version'])
 
-    # Split the diff content into lines
-    lines = diff_content.splitlines()
-
-    for line in lines:
-        # Check if the line is an added or removed line in the diff
-        if line.startswith('+') or line.startswith('-'):
-            # Remove the '+' or '-' prefix for easier regex matching
-            code_line = line[1:].strip()
-            match = function_pattern.match(code_line)
-            if match:
-                function_name = match.group(1)
-                changed_functions.add(function_name)
-
-    return changed_functions
 
 def process_all_commits(unique_links):
     os.makedirs(EXTRACTED_FUNCTIONS_DIR, exist_ok=True)
