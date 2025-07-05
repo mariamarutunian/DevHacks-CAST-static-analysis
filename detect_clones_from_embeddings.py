@@ -35,9 +35,7 @@ def main():
             project_tensor = torch.tensor(project_entry["embedding"])
 
             score = compare_a_pair(cve_tensor, project_tensor)
-            print(score)
-
-
+            
             if score < 0.95:  # Change as needed
                 continue
 
