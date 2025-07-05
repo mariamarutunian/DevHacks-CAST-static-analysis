@@ -103,17 +103,50 @@ def sparse_clone_and_extract(repo_url, commit_hash, out_path):
 def extract_changed_functions(repodir, diff_file):
     with open(diff_file, "r") as f:
         diff_content = f.read()
-    import parse_diff2
-    results = parse_diff2.parse_git_diff_to_old_version(diff_content)
+    import parse_diff
+    results = parse_diff.parse_git_diff_to_old_version(diff_content)
     
     repo_all_diffs = repodir + "_all_diffs"
     os.makedirs(repo_all_diffs, exist_ok=True)
+
+    repo_vulnerable_fragments = repodir + "_vulnerable_fragments"
+    os.makedirs(repo_vulnerable_fragments, exist_ok=True)
+
     for i in range(len(results)):
         item = results[i]
-        one_diff_path = os.path.join(repo_all_diffs, str(i) + item['file'].replace("/", "_"))
-        with open(one_diff_path, "w") as f:
-            f.write(item['old_version'])
+        path_part = "part_" + str(i) + "_" + item['file'].replace("/", "_")
 
+        diff_part = os.path.join(repo_all_diffs, path_part + ".diff")
+        with open(diff_part, "w") as f:
+            f.write(item['diff_part'])
+
+        is_code_change = if_code_functional_change(diff_part)
+        
+        if is_code_change:
+            print(f"{diff_part} contains functional change, saving old, vulnarable version")
+            old_version_path = os.path.join(repo_vulnerable_fragments, path_part)
+            with open(old_version_path, "w") as f:
+                f.write(item['old_version'])
+    
+    remove_useless_files(repodir, diff_file, repo_all_diffs)
+
+def if_code_functional_change(diff_part):
+    import check_for_functional_patch
+    git_diff = check_for_functional_patch.get_git_diff(file_path=diff_part)
+
+    analyzer = check_for_functional_patch.CodeChangeAnalyzer("codellama/CodeLlama-7b-Instruct-hf")
+    analyzer.download_and_load_model()
+    is_code_change, explanation = analyzer.analyze_diff(git_diff)
+    return is_code_change
+
+def remove_useless_files(repodir, diff_file, repo_all_diffs):
+    import shutil
+    try:
+        shutil.rmtree(repodir)
+        shutil.rmtree(repo_all_diffs)
+        os.remove(diff_file)
+    except OSError as e:
+        print(f"Error: {e.strerror}")
 
 def process_all_commits(unique_links):
     os.makedirs(EXTRACTED_FUNCTIONS_DIR, exist_ok=True)

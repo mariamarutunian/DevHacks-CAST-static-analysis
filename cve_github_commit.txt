@@ -1,0 +1,1 @@
+CVE-2014-9756 https://github.com/erikd/libsndfile/commit/725c7dbb95bfaf8b4bb7b04820e3a00cceea9ce6

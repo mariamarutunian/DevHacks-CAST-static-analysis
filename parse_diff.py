@@ -6,12 +6,13 @@ def parse_git_diff_to_old_version(diff_text):
         diff_text (str): Output from 'git diff -W' command
     
     Returns:
-        list: List of dictionaries containing file info and old version content
+        list: List of dictionaries containing file info, diff part, and old version content
     """
     lines = diff_text.strip().split('\n')
     result = []
     current_file = None
     current_hunk = []
+    current_diff_part = []
     in_hunk = False
     
     i = 0
@@ -25,6 +26,7 @@ def parse_git_diff_to_old_version(diff_text):
                 old_content = generate_old_version(current_hunk)
                 result.append({
                     'file': current_file,
+                    'diff_part': '\n'.join(current_diff_part),
                     'old_version': old_content
                 })
             
@@ -33,6 +35,7 @@ def parse_git_diff_to_old_version(diff_text):
             if len(parts) >= 4:
                 current_file = parts[3][2:]  # Remove 'b/' prefix
             current_hunk = []
+            current_diff_part = [line]  # Start new diff part with file header
             in_hunk = False
             
         # Check for hunk header (@@)
@@ -42,11 +45,16 @@ def parse_git_diff_to_old_version(diff_text):
                 old_content = generate_old_version(current_hunk)
                 result.append({
                     'file': current_file,
+                    'diff_part': '\n'.join(current_diff_part),
                     'old_version': old_content
                 })
             
             current_hunk = []
+            current_diff_part = []
             in_hunk = True
+            
+            # Add the @@ line to diff part
+            current_diff_part.append(line)
             
             # Check if there's code after the @@ header
             # Format: @@ -old_start,old_count +new_start,new_count @@ optional_function_context
@@ -60,10 +68,12 @@ def parse_git_diff_to_old_version(diff_text):
         # Process hunk content
         elif in_hunk and (line.startswith('+') or line.startswith('-') or line.startswith(' ')):
             current_hunk.append(line)
+            current_diff_part.append(line)
             
-        # Skip other lines (index, mode changes, etc.)
-        elif not line.startswith('index') and not line.startswith('---') and not line.startswith('+++'):
-            if in_hunk:
+        # Handle other lines (index, mode changes, etc.)
+        elif current_diff_part:  # Only add if we're in a diff context
+            current_diff_part.append(line)
+            if in_hunk and not line.startswith('index') and not line.startswith('---') and not line.startswith('+++'):
                 current_hunk.append(line)
         
         i += 1
@@ -73,6 +83,7 @@ def parse_git_diff_to_old_version(diff_text):
         old_content = generate_old_version(current_hunk)
         result.append({
             'file': current_file,
+            'diff_part': '\n'.join(current_diff_part),
             'old_version': old_content
         })
     
@@ -230,8 +241,11 @@ index 26d3d6d..6ccab78 100644
     
     results = parse_git_diff_to_old_version(sample_diff)
     
-    for item in results:
+    for i, item in enumerate(results):
+        print(f"=== Change {i+1} ===")
         print(f"File: {item['file']}")
-        print("Old version:")
+        print("\nDiff part:")
+        print(item['diff_part'])
+        print("\nOld version:")
         print(item['old_version'])
-        print("-" * 40)
+        print("=" * 50)
