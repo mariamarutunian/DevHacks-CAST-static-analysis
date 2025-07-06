@@ -398,6 +398,8 @@ def main():
     else:
         # Text format
         output_lines = []
+        i = 0
+        os.makedirs(args.output, exist_ok=True)
         for file_path, functions in results.items():
             #output_lines.append(f"=== {file_path} ===")
             #output_lines.append(f"Found {len(functions)} functions")
@@ -410,16 +412,20 @@ def main():
                 #output_lines.append(f"Signature: {func.signature}")
                 #output_lines.append("Body:")
                 #output_lines.append("-" * 50)
-                output_lines.append(func.body)
-                output_lines.append("-" * 50)
+                #output_lines.append(func.body)
+                #output_lines.append("-" * 50)
+                function_saving_path = os.path.join(args.output, func.name + str(i))
+                i += 1
+                with open(function_saving_path, 'w') as f:
+                    f.write(func.body)
         
-        output_text = '\n'.join(output_lines)
+        #output_text = '\n'.join(output_lines)
         
-        if args.output:
-            with open(args.output, 'w') as f:
-                f.write(output_text)
-        else:
-            print(output_text)
+        #if args.output:
+        #    with open(args.output, 'w') as f:
+        #        f.write(output_text)
+        #else:
+        #    print(output_text)
 
 
 if __name__ == "__main__":

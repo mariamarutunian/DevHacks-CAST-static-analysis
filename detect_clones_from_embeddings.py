@@ -25,7 +25,6 @@ def main():
         project_data = json.load(f)
 
     results = []
-
     for cve_entry in cve_data:
         cve_path = cve_entry["path"]
         cve_tensor = torch.tensor(cve_entry["embedding"])
