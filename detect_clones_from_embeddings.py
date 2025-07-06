@@ -36,7 +36,7 @@ def main():
 
             score = compare_a_pair(cve_tensor, project_tensor)
             
-            if score < 0.95:  # Change as needed
+            if score < 0.947:  # Change as needed
                 continue
 
             clones_count += 1
