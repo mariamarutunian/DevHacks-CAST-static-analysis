@@ -3,6 +3,7 @@ import torch
 import argparse
 import json
 import os
+from typing import List
 
 model_name = "microsoft/unixcoder-base-nine"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -10,7 +11,7 @@ model = AutoModel.from_pretrained(model_name)
 model.eval()
 
 
-def chunk_code(code: str, max_tokens=512, stride=256) -> list[list[int]]:
+def chunk_code(code, max_tokens=512, stride=256):
     token_ids = tokenizer.encode(code, add_special_tokens=True, truncation=False)
     chunks = []
 
@@ -63,7 +64,7 @@ def main():
 
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
-                    content = f.read()
+                    content = str(f.read())
             except Exception as e:
                 print(f"Skipping file {filepath} due to read error: {e}")
                 continue
