@@ -16,7 +16,7 @@ This script automates the process of extracting vulnerable code fragments from p
 
 ### Steps:
 
-1. Downloading CVE Data
+1. Downloading CVE Data (years are hardcoded in the script)
 2. Extracting GitHub Commit Links
 3. Cloning Repos and Extracting Diffs
 4. Filtering Functional Changes by using targeted prompting for LLM
@@ -53,3 +53,11 @@ Compares embeddings from CVE and project JSON files using cosine similarity.
 Reports matching pairs (above a threshold) as potential clones and saves the results to a JSON file.
 
 ---
+
+
+# Run commands
+```bash
+python3 extract_github_cves.py
+rm -rf embeddings/ results/ cloned_repos/ output/ find_known_cves.log extracted_functions_embeddings.json
+python3 find_known_cves.py --projects-file all_github_projects.txt
+```
