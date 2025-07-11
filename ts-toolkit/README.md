@@ -1,4 +1,4 @@
-# tree-sitter-tooling
+# ts-toolkit
 
 A set of utilities built around [tree-sitter](https://tree-sitter.github.io/) for code structure analysis.
 
