@@ -10,6 +10,10 @@ Vulnerability Detector-ը գործիք է, որը մշակվել է ԴևHacks (V
 Հիմնական գաղափարը ներառում է հայտնի խոցելիությունների (CVE) մասին տվյալների հավաքագրում (հիմնականում cve.org կայքից) և մշակում, մասնավորապես խոցելիություն պարունակող և ուղղած կոդի տարբերակների առանձնացում LLM-ին ուղղված թիրախավորված հարցումների միջոցով։ Այնուհետև, օգտագործելով ML մոդել (UniXcoder), հավաքագրված տվյալները և մուտքային ծրագրի նախնական կոդը թարգմանվում է թվային վեկտորի, ինչն էլ հնարավորություն է տալիս գտնել նմանատիպ կոդի հատվածներ մուտքային ծրագրում, պոտենցիալ խոցելիության մասին զեկուցելու համար։
 
 ---
+## Discovered vulnerabilities
+* [Discovered CVE-2014-9756 in chuck](https://github.com/ccrma/chuck/issues/503)
+* [Discovered CVE-2021-21309 in clac](https://github.com/soveran/clac/issues/28)
+
 ## extract_github_cves.py
 
 This script automates the process of extracting vulnerable code fragments from public GitHub CVE fix commits.
