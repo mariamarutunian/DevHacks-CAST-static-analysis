@@ -1,0 +1,4 @@
+CVE-2014-9756 https://github.com/erikd/libsndfile/commit/725c7dbb95bfaf8b4bb7b04820e3a00cceea9ce6
+CVE-2020-15888 https://github.com/lua/lua/commit/6298903e35217ab69c279056f925fb72900ce0b7
+CVE-2021-21309 https://github.com/redis/redis/commit/c992857618db99776917f10bf4f2345a5fdc78b0
+CVE-2019-19244 https://github.com/sqlite/sqlite/commit/e59c562b3f6894f84c715772c4b116d7b5c01348
